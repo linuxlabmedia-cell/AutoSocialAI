@@ -1,13 +1,14 @@
 [variables]
 NODE_VERSION = "22"
+NODE_ENV = "development"
 
 [phases.install]
-cmds = ["npm install -g pnpm@11 && pnpm install"]
+cmds = ["pnpm install"]
 
 [phases.build]
 cmds = [
-  "npx prisma generate --schema=packages/db/prisma/schema.prisma",
-  "pnpm --filter @autosocial/web build"
+  "pnpm --filter @autosocial/db exec prisma generate",
+  "NODE_ENV=production pnpm --filter @autosocial/web build"
 ]
 
 [start]
