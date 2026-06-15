@@ -1,9 +1,5 @@
 [variables]
-NODE_VERSION = "20"
-NIXPACKS_PNPM_VERSION = "11"
-
-[phases.setup]
-nixPkgs = ["nodejs_20"]
+NODE_VERSION = "22"
 
 [phases.install]
 cmds = ["npm install -g pnpm@11 && pnpm install"]
