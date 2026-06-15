@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install && ./node_modules/.bin/prisma generate --schema=packages/db/prisma/schema.prisma && pnpm --filter @autosocial/web build"
+buildCommand = "pnpm install --force && pnpm --filter @autosocial/web build"
 
 [deploy]
 startCommand = "pnpm --filter @autosocial/web start"
