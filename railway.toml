@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @autosocial/web... build"
+
+[deploy]
+startCommand = "pnpm --filter @autosocial/web start"
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
