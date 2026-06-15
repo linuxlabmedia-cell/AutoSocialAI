@@ -1,0 +1,19 @@
+{
+  "name": "@autosocial/trpc",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.3",
+    "@autosocial/db": "workspace:*",
+    "@autosocial/shared": "workspace:*",
+    "@trpc/server": "^11.0.0",
+    "bullmq": "^5.78.0",
+    "ioredis": "^5.11.1",
+    "stripe": "^15.0.0",
+    "superjson": "^2.2.1",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

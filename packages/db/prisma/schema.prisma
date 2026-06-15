@@ -1,0 +1,613 @@
+// AutoSocial AI — Prisma Schema
+// Database: PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============================================================
+// MULTI-TENANT FOUNDATION
+// ============================================================
+
+model Organization {
+  id                     String   @id @default(cuid())
+  clerkOrgId             String?  @unique @map("clerk_org_id")
+  name                   String
+  slug                   String   @unique
+  plan                   Plan     @default(STARTER)
+  stripeCustomerId       String?  @map("stripe_customer_id")
+  stripeSubscriptionId   String?  @map("stripe_subscription_id")
+  subscriptionStatus     String   @default("trialing") @map("subscription_status")
+  whiteLabelDomain       String?  @map("white_label_domain")
+  whiteLabelLogoUrl      String?  @map("white_label_logo_url")
+  whiteLabelPrimaryColor String?  @map("white_label_primary_color")
+  maxClients             Int      @default(3) @map("max_clients")
+  maxPostsPerMonth       Int      @default(100) @map("max_posts_per_month")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  users             User[]
+  clients           Client[]
+  workflows         Workflow[]
+  usageRecords      UsageRecord[]
+  notifications     Notification[]
+  creativeTemplates CreativeTemplate[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  clerkUserId    String?  @unique @map("clerk_user_id")
+  organizationId String   @map("organization_id")
+  email          String   @unique
+  passwordHash   String?  @map("password_hash")
+  fullName       String?  @map("full_name")
+  avatarUrl      String?  @map("avatar_url")
+  role           UserRole @default(MEMBER)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  approvedPosts   Post[]         @relation("ApprovedBy")
+  rejectedPosts   Post[]         @relation("RejectedBy")
+  clientProfiles  Client[]       @relation("ClientOwner")
+  notifications   Notification[]
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+// ============================================================
+// CLIENT / BRAND PROFILES
+// ============================================================
+
+model Client {
+  id              String  @id @default(cuid())
+  organizationId  String  @map("organization_id")
+  createdByUserId String? @map("created_by_user_id")
+
+  // Basic Info
+  businessName String  @map("business_name")
+  industry     String
+  subIndustry  String? @map("sub_industry")
+  businessType String? @map("business_type")
+  website      String?
+  location     String?
+  serviceAreas String[] @map("service_areas")
+  timezone     String   @default("UTC")
+
+  // Brand Identity
+  targetAudience      String?  @map("target_audience")
+  brandVoice          String?  @map("brand_voice")
+  brandVoiceNotes     String?  @map("brand_voice_notes")
+  brandColors         String[] @map("brand_colors")
+  brandGuidelines     String?  @map("brand_guidelines")
+  businessDescription String?  @map("business_description")
+  logoUrl             String?  @map("logo_url")
+  secondaryLogoUrl    String?  @map("secondary_logo_url")
+
+  // Business Details
+  products       String[]
+  services       String[]
+  competitors    String[]
+  specialOffers  String?  @map("special_offers")
+  ctaPreferences String?  @map("cta_preferences")
+  additionalNotes String? @map("additional_notes")
+
+  // Content Strategy
+  contentPillars               String[]         @map("content_pillars")
+  preferredCreativeCategories  String[]         @map("preferred_creative_categories")
+  preferredDesignStyles        String[]         @map("preferred_design_styles")
+  excludedDesignStyles         String[]         @map("excluded_design_styles")
+  preferredImageStyles         String[]         @map("preferred_image_styles")
+  excludedImageStyles          String[]         @map("excluded_image_styles")
+  postingFrequency             PostingFrequency @default(DAILY) @map("posting_frequency")
+  customSchedule               Json?            @map("custom_schedule")
+  autoApprove                  Boolean          @default(false) @map("auto_approve")
+
+  // Status
+  status              ClientStatus @default(ACTIVE)
+  clientPortalEnabled Boolean      @default(true) @map("client_portal_enabled")
+  clientUserId        String?      @map("client_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User?                    @relation("ClientOwner", fields: [createdByUserId], references: [id])
+  socialAccounts    ClientSocialAccount[]
+  posts             Post[]
+  calendarSlots     ContentCalendarSlot[]
+  workflows         Workflow[]
+  usedTopics        UsedTopic[]
+  analyticsSnaps    AnalyticsSnapshot[]
+  workflowRuns      WorkflowRun[]
+  assets            ClientAsset[]
+  approvedTemplates ClientApprovedTemplate[]
+
+  @@index([organizationId])
+  @@map("clients")
+}
+
+// ============================================================
+// CREATIVE TEMPLATE LIBRARY
+// ============================================================
+
+model CreativeTemplate {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+
+  name            String
+  category        String
+  industries      String[]
+  layoutType      String?  @map("layout_type")
+  description     String?
+  exampleImageUrl String?  @map("example_image_url")
+
+  // AI Instructions
+  promptInstructions  String? @map("prompt_instructions")
+  designRules         String? @map("design_rules")
+  textPlacementRules  String? @map("text_placement_rules")
+  brandPlacementRules String? @map("brand_placement_rules")
+  ctaPlacementRules   String? @map("cta_placement_rules")
+  promptFramework     String? @map("prompt_framework")
+
+  // Strategy
+  contentStrategy    String? @map("content_strategy")
+  marketingObjective String? @map("marketing_objective")
+  emotionalObjective String? @map("emotional_objective")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientApprovals ClientApprovedTemplate[]
+  posts           Post[]
+
+  @@index([organizationId])
+  @@map("creative_templates")
+}
+
+model ClientApprovedTemplate {
+  clientId   String   @map("client_id")
+  templateId String   @map("template_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  client   Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template CreativeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, templateId])
+  @@map("client_approved_templates")
+}
+
+// ============================================================
+// CLIENT ASSETS
+// ============================================================
+
+model ClientAsset {
+  id        String   @id @default(cuid())
+  clientId  String   @map("client_id")
+  type      String   // LOGO, SECONDARY_LOGO, BRAND_PHOTO, TEAM_PHOTO, PROPERTY_PHOTO, STOCK_PHOTO, EXAMPLE_POST, COMPETITOR_GRAPHIC, BRAND_GUIDELINE
+  name      String
+  url       String
+  mimeType  String?  @map("mime_type")
+  fileSize  Int?     @map("file_size")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, type])
+  @@map("client_assets")
+}
+
+// ============================================================
+// SOCIAL ACCOUNTS
+// ============================================================
+
+model ClientSocialAccount {
+  id                   String    @id @default(cuid())
+  clientId             String    @map("client_id")
+  platform             Platform
+  platformAccountId    String    @map("platform_account_id")
+  accountName          String    @map("account_name")
+  accountType          String?   @map("account_type")
+  accessToken          String    @map("access_token")
+  accessTokenExpiresAt DateTime? @map("access_token_expires_at")
+  longLivedToken       String?   @map("long_lived_token")
+  isConnected          Boolean   @default(true) @map("is_connected")
+  lastTokenRefresh     DateTime? @map("last_token_refresh")
+  metaData             Json?     @map("meta_data")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, platform, platformAccountId])
+  @@map("client_social_accounts")
+}
+
+// ============================================================
+// CONTENT & POSTS
+// ============================================================
+
+model Post {
+  id             String @id @default(cuid())
+  clientId       String @map("client_id")
+  organizationId String @map("organization_id")
+
+  // Content
+  caption      String
+  captionShort String?  @map("caption_short")
+  hashtags     String[]
+  altText      String?  @map("alt_text")
+
+  // Creative Framework
+  templateId       String?  @map("template_id")
+  creativeCategory String?  @map("creative_category")
+  contentGoal      String?  @map("content_goal")
+  marketingObjective String? @map("marketing_objective")
+  headline         String?
+  supportingText   String?  @map("supporting_text")
+  ctaText          String?  @map("cta_text")
+
+  // Type & Category
+  postType      PostType @map("post_type")
+  contentPillar String?  @map("content_pillar")
+  topic         String?
+
+  // Image
+  imageUrl             String?     @map("image_url")
+  imagePrompt          String?     @map("image_prompt")
+  imageGenerationModel String?     @map("image_generation_model")
+  imageStatus          ImageStatus @default(PENDING) @map("image_status")
+
+  // Status Pipeline
+  status PostStatus @default(DRAFT)
+
+  // QA Results
+  qaScore    Decimal? @map("qa_score") @db.Decimal(3, 2)
+  qaResults  Json?    @map("qa_results")
+  qaAttempts Int      @default(0) @map("qa_attempts")
+  qaPassed   Boolean? @map("qa_passed")
+
+  // Scheduling
+  scheduledAt DateTime? @map("scheduled_at")
+  publishedAt DateTime? @map("published_at")
+
+  // Meta Publishing
+  facebookPostId   String?   @map("facebook_post_id")
+  instagramMediaId String?   @map("instagram_media_id")
+  platformTargets  Platform[] @map("platform_targets")
+  publishError     String?   @map("publish_error")
+  retryCount       Int       @default(0) @map("retry_count")
+  lastRetryAt      DateTime? @map("last_retry_at")
+
+  // Attribution
+  workflowRunId    String?   @map("workflow_run_id")
+  generatedBy      String    @default("ai") @map("generated_by")
+  approvedByUserId String?   @map("approved_by_user_id")
+  approvedAt       DateTime? @map("approved_at")
+  rejectedByUserId String?   @map("rejected_by_user_id")
+  rejectionReason  String?   @map("rejection_reason")
+
+  // AI Metadata
+  generationPrompt String? @map("generation_prompt")
+  generationModel  String? @map("generation_model")
+  generationTokens Int?    @map("generation_tokens")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  client         Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template       CreativeTemplate?   @relation(fields: [templateId], references: [id])
+  approvedBy     User?               @relation("ApprovedBy", fields: [approvedByUserId], references: [id])
+  rejectedBy     User?               @relation("RejectedBy", fields: [rejectedByUserId], references: [id])
+  workflowRun    WorkflowRun?        @relation(fields: [workflowRunId], references: [id])
+  analytics      PostAnalytics[]
+  publishingLogs PublishingLog[]
+  calendarSlots  ContentCalendarSlot[]
+
+  @@index([clientId, status])
+  @@index([scheduledAt])
+  @@index([clientId, createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+// ============================================================
+// CONTENT CALENDAR
+// ============================================================
+
+model ContentCalendarSlot {
+  id            String     @id @default(cuid())
+  clientId      String     @map("client_id")
+  postId        String?    @map("post_id")
+  scheduledDate DateTime   @map("scheduled_date") @db.Date
+  scheduledTime String     @map("scheduled_time")
+  platform      Platform
+  status        SlotStatus @default(EMPTY)
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  post   Post?  @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([clientId, scheduledDate])
+  @@map("content_calendar_slots")
+}
+
+// ============================================================
+// AUTOMATION WORKFLOWS
+// ============================================================
+
+model Workflow {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  clientId       String       @map("client_id")
+  name           String
+  type           WorkflowType
+  config         Json
+  isActive       Boolean      @default(true) @map("is_active")
+  cronSchedule   String?      @map("cron_schedule")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  runs         WorkflowRun[]
+
+  @@index([clientId])
+  @@map("workflows")
+}
+
+model WorkflowRun {
+  id             String            @id @default(cuid())
+  workflowId     String?           @map("workflow_id")
+  clientId       String            @map("client_id")
+  status         WorkflowRunStatus @default(RUNNING)
+  postsGenerated Int               @default(0) @map("posts_generated")
+  postsValidated Int               @default(0) @map("posts_validated")
+  postsScheduled Int               @default(0) @map("posts_scheduled")
+  postsFailed    Int               @default(0) @map("posts_failed")
+  errorLog       String[]          @map("error_log")
+  startedAt      DateTime          @default(now()) @map("started_at")
+  completedAt    DateTime?         @map("completed_at")
+  metadata       Json?
+
+  workflow Workflow? @relation(fields: [workflowId], references: [id])
+  client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  posts    Post[]
+
+  @@index([clientId])
+  @@map("workflow_runs")
+}
+
+// ============================================================
+// PUBLISHING LOGS
+// ============================================================
+
+model PublishingLog {
+  id              String   @id @default(cuid())
+  postId          String   @map("post_id")
+  clientId        String   @map("client_id")
+  platform        Platform
+  action          String
+  status          String
+  metaApiResponse Json?    @map("meta_api_response")
+  errorCode       String?  @map("error_code")
+  errorMessage    String?  @map("error_message")
+  durationMs      Int?     @map("duration_ms")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("publishing_logs")
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
+model PostAnalytics {
+  id             String   @id @default(cuid())
+  postId         String   @map("post_id")
+  clientId       String   @map("client_id")
+  platform       Platform
+  platformPostId String   @map("platform_post_id")
+  reach          Int      @default(0)
+  impressions    Int      @default(0)
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  saves          Int      @default(0)
+  clicks         Int      @default(0)
+  profileVisits  Int      @default(0) @map("profile_visits")
+  engagementRate Decimal? @map("engagement_rate") @db.Decimal(5, 4)
+  aiScore        Decimal? @map("ai_score") @db.Decimal(3, 2)
+  fetchedAt      DateTime @default(now()) @map("fetched_at")
+  postDate       DateTime? @map("post_date") @db.Date
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, fetchedAt])
+  @@map("post_analytics")
+}
+
+model AnalyticsSnapshot {
+  id               String   @id @default(cuid())
+  clientId         String   @map("client_id")
+  platform         Platform
+  periodStart      DateTime @map("period_start") @db.Date
+  periodEnd        DateTime @map("period_end") @db.Date
+  totalReach       BigInt   @default(0) @map("total_reach")
+  totalImpressions BigInt   @default(0) @map("total_impressions")
+  totalEngagement  BigInt   @default(0) @map("total_engagement")
+  totalPosts       Int      @default(0) @map("total_posts")
+  avgEngagementRate Decimal? @map("avg_engagement_rate") @db.Decimal(5, 4)
+  topPostType      String?  @map("top_post_type")
+  topContentPillar String?  @map("top_content_pillar")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, platform, periodStart])
+  @@map("analytics_snapshots")
+}
+
+// ============================================================
+// TOPIC TRACKING
+// ============================================================
+
+model UsedTopic {
+  id       String   @id @default(cuid())
+  clientId String   @map("client_id")
+  topic    String
+  postType PostType @map("post_type")
+  postId   String?  @map("post_id")
+  usedAt   DateTime @default(now()) @map("used_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, usedAt(sort: Desc)])
+  @@map("used_topics")
+}
+
+// ============================================================
+// BILLING
+// ============================================================
+
+model UsageRecord {
+  id              String   @id @default(cuid())
+  organizationId  String   @map("organization_id")
+  periodStart     DateTime @map("period_start") @db.Date
+  periodEnd       DateTime @map("period_end") @db.Date
+  postsGenerated  Int      @default(0) @map("posts_generated")
+  imagesGenerated Int      @default(0) @map("images_generated")
+  apiCalls        Int      @default(0) @map("api_calls")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, periodStart])
+  @@map("usage_records")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  organizationId String    @map("organization_id")
+  type           String
+  title          String
+  body           String?
+  data           Json?
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Plan {
+  STARTER
+  GROWTH
+  AGENCY
+  ENTERPRISE
+}
+
+enum UserRole {
+  ADMIN
+  AGENCY_OWNER
+  MEMBER
+  CLIENT_VIEWER
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+}
+
+enum PostingFrequency {
+  DAILY
+  THREE_PER_WEEK
+  WEEKLY
+  CUSTOM
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum PostType {
+  EDUCATIONAL
+  AUTHORITY
+  ENGAGEMENT
+  INDUSTRY_NEWS
+  BEHIND_THE_SCENES
+  CASE_STUDY
+  TESTIMONIAL
+  FAQ
+  MYTH_BUSTING
+  PROBLEM_SOLUTION
+}
+
+enum PostStatus {
+  DRAFT
+  GENERATING
+  VALIDATING
+  APPROVED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  REJECTED
+  PENDING_APPROVAL
+}
+
+enum ImageStatus {
+  PENDING
+  GENERATING
+  GENERATED
+  FAILED
+}
+
+enum SlotStatus {
+  EMPTY
+  FILLED
+  PUBLISHED
+}
+
+enum WorkflowType {
+  SINGLE
+  BATCH_30
+  BATCH_WEEKLY
+  RECURRING
+}
+
+enum WorkflowRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}

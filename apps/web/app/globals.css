@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 224 47% 5%;
+    --foreground: 213 31% 93%;
+    --card: 224 44% 8%;
+    --card-foreground: 213 31% 93%;
+    --popover: 224 44% 8%;
+    --popover-foreground: 213 31% 93%;
+    --primary: 252 87% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 30% 13%;
+    --secondary-foreground: 213 31% 80%;
+    --muted: 224 30% 13%;
+    --muted-foreground: 215 20% 45%;
+    --accent: 224 30% 13%;
+    --accent-foreground: 213 31% 93%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 30% 14%;
+    --input: 224 30% 14%;
+    --ring: 252 87% 67%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(ellipse at 15% 15%, rgba(124, 58, 237, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(59, 130, 246, 0.06) 0%, transparent 55%);
+  }
+}
+
+@layer utilities {
+  .glow-violet {
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.3);
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+  .card-glow:hover {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.12);
+  }
+}

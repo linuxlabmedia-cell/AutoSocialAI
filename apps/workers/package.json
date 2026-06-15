@@ -1,0 +1,28 @@
+{
+  "name": "@autosocial/workers",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@autosocial/db": "workspace:*",
+    "@autosocial/shared": "workspace:*",
+    "dotenv": "^16.4.0",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "bullmq": "^5.8.0",
+    "ioredis": "^5.4.0",
+    "node-cron": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.600.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.0"
+  }
+}
