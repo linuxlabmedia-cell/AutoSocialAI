@@ -8,11 +8,11 @@ import { SocialAccountsManager } from "@/components/clients/SocialAccountsManage
 function CallbackHandler() {
   const searchParams = useSearchParams();
   useEffect(() => {
-    if (searchParams.get("connected") === "true") {
-      toast.success("Social account connected! Click Refresh to see it.");
+    if (searchParams.get("meta_connected") === "true") {
+      toast.success("Facebook & Instagram connected!");
     }
-    if (searchParams.get("error")) {
-      toast.error(`Connection failed: ${searchParams.get("error")}`);
+    if (searchParams.get("meta_error")) {
+      toast.error(`Connection failed: ${searchParams.get("meta_error")}`);
     }
   }, [searchParams]);
   return null;
