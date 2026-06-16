@@ -22,9 +22,6 @@ export function SocialAccountsManager({ clientId }: { clientId: string }) {
 
   const { data, refetch, isLoading } = api.social.getConnectedAccounts.useQuery({ clientId });
   const getConnectUrl = api.social.getConnectUrl.useMutation({
-    onSuccess: (res) => {
-      if (res.url) window.open(res.url, "_blank", "width=600,height=700");
-    },
     onError: (err) => toast.error(err.message),
     onSettled: () => setConnecting(false),
   });
@@ -37,8 +34,19 @@ export function SocialAccountsManager({ clientId }: { clientId: string }) {
   const displayNames = data?.displayNames ?? {};
 
   function handleConnect() {
+    // Open popup immediately (synchronous user gesture) so browser doesn't block it
+    const popup = window.open("about:blank", "_blank", "width=620,height=720,noopener");
     setConnecting(true);
-    getConnectUrl.mutate({ clientId });
+    getConnectUrl.mutate({ clientId }, {
+      onSuccess: (res) => {
+        if (res.url && popup) {
+          popup.location.href = res.url;
+        } else if (!popup) {
+          // Popup was blocked — fall back to redirect
+          if (res.url) window.location.href = res.url;
+        }
+      },
+    });
   }
 
   return (
