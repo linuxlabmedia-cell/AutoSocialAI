@@ -113,6 +113,9 @@ model Client {
   customSchedule               Json?            @map("custom_schedule")
   autoApprove                  Boolean          @default(false) @map("auto_approve")
 
+  // Social Publishing (Ayrshare)
+  ayrshareProfileKey String? @map("ayrshare_profile_key")
+
   // Status
   status              ClientStatus @default(ACTIVE)
   clientPortalEnabled Boolean      @default(true) @map("client_portal_enabled")

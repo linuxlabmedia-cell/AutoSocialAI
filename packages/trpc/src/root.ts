@@ -7,6 +7,7 @@ import { billingRouter } from "./routers/billing";
 import { metaRouter } from "./routers/meta";
 import { templatesRouter } from "./routers/templates";
 import { assetsRouter } from "./routers/assets";
+import { socialRouter } from "./routers/social";
 
 export const appRouter = createTRPCRouter({
   clients: clientsRouter,
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   meta: metaRouter,
   templates: templatesRouter,
   assets: assetsRouter,
+  social: socialRouter,
 });
 
 export type AppRouter = typeof appRouter;

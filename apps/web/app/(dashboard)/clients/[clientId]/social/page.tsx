@@ -5,14 +5,14 @@ import { useEffect, Suspense } from "react";
 import { toast } from "sonner";
 import { SocialAccountsManager } from "@/components/clients/SocialAccountsManager";
 
-function MetaCallbackHandler() {
+function CallbackHandler() {
   const searchParams = useSearchParams();
   useEffect(() => {
-    if (searchParams.get("meta_connected") === "true") {
-      toast.success("Facebook & Instagram connected successfully!");
+    if (searchParams.get("connected") === "true") {
+      toast.success("Social account connected! Click Refresh to see it.");
     }
-    if (searchParams.get("meta_error")) {
-      toast.error(`Connection failed: ${searchParams.get("meta_error")}`);
+    if (searchParams.get("error")) {
+      toast.error(`Connection failed: ${searchParams.get("error")}`);
     }
   }, [searchParams]);
   return null;
@@ -24,7 +24,7 @@ export default function ClientSocialPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <Suspense>
-        <MetaCallbackHandler />
+        <CallbackHandler />
       </Suspense>
       <div>
         <h2 className="text-2xl font-bold text-white">Social Accounts</h2>
