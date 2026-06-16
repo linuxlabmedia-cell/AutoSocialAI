@@ -22,6 +22,13 @@ export const socialRouter = createTRPCRouter({
 
       if (!profileKey) {
         const profile = await createProfile(client.businessName);
+        console.log("[Ayrshare] createProfile response:", JSON.stringify(profile));
+        if (!profile.profileKey) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Ayrshare profile creation failed: ${JSON.stringify(profile)}`,
+          });
+        }
         profileKey = profile.profileKey;
         await ctx.db.client.update({
           where: { id: input.clientId },
@@ -30,6 +37,13 @@ export const socialRouter = createTRPCRouter({
       }
 
       const result = await generateConnectUrl(profileKey, PROD_DOMAIN);
+      console.log("[Ayrshare] generateConnectUrl response:", JSON.stringify(result));
+      if (!result.url) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Ayrshare URL generation failed: ${JSON.stringify(result)}`,
+        });
+      }
       return { url: result.url };
     }),
 

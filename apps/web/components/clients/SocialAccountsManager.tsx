@@ -19,6 +19,7 @@ const PLATFORM_META: Record<string, { label: string; icon: React.ReactNode; colo
 
 export function SocialAccountsManager({ clientId }: { clientId: string }) {
   const [connecting, setConnecting] = useState(false);
+  const [connectUrl, setConnectUrl] = useState<string | null>(null);
 
   const { data, refetch, isLoading } = api.social.getConnectedAccounts.useQuery({ clientId });
   const getConnectUrl = api.social.getConnectUrl.useMutation({
@@ -39,12 +40,15 @@ export function SocialAccountsManager({ clientId }: { clientId: string }) {
     setConnecting(true);
     getConnectUrl.mutate({ clientId }, {
       onSuccess: (res) => {
-        if (res.url && popup) {
-          popup.location.href = res.url;
-        } else if (!popup) {
-          // Popup was blocked — fall back to redirect
-          if (res.url) window.location.href = res.url;
+        if (res.url) {
+          setConnectUrl(res.url);
+          if (popup) popup.location.href = res.url;
+          else window.location.href = res.url;
         }
+      },
+      onError: (err) => {
+        if (popup) popup.close();
+        toast.error(err.message);
       },
     });
   }
@@ -81,6 +85,16 @@ export function SocialAccountsManager({ clientId }: { clientId: string }) {
           )}
         </button>
 
+        {connectUrl && (
+          <a
+            href={connectUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-xs text-violet-400 hover:text-violet-300 underline"
+          >
+            If the popup was blocked, click here to open the connection portal
+          </a>
+        )}
         <p className="text-xs text-slate-600 text-center">
           After connecting, click &ldquo;Refresh&rdquo; below to see the updated accounts.
         </p>
