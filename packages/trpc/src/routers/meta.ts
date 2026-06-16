@@ -17,7 +17,6 @@ export const metaRouter = createTRPCRouter({
           "pages_show_list",
           "pages_read_engagement",
           "pages_manage_posts",
-          "instagram_basic",
           "instagram_content_publish",
         ].join(","),
         state: Buffer.from(JSON.stringify({ clientId: input.clientId })).toString("base64"),
