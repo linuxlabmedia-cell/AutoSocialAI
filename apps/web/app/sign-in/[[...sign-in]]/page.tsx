@@ -13,7 +13,9 @@ export default function SignInPage() {
     setLoading(true);
     setError("");
     const fd = new FormData(e.currentTarget);
-    const result = await signInAction(fd);
+    const result = await signInAction(fd).catch((err: unknown) => ({
+      error: err instanceof Error ? err.message : "Server error — check Railway logs",
+    }));
     if (result.error) {
       setError(result.error);
       setLoading(false);
