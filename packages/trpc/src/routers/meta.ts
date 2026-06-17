@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { decrypt } from "../lib/crypto";
 
 const META_GRAPH_URL = "https://graph.facebook.com/v19.0";
 
@@ -74,8 +75,7 @@ export const metaRouter = createTRPCRouter({
       if (!account) throw new TRPCError({ code: "NOT_FOUND" });
 
       try {
-        // Decrypt token in production - here using plain for structure
-        const token = account.accessToken;
+        const token = decrypt(account.accessToken);
         const res = await fetch(
           `${META_GRAPH_URL}/debug_token?input_token=${token}&access_token=${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`
         );
