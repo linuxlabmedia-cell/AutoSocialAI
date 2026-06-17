@@ -88,15 +88,18 @@ export async function GET(req: NextRequest) {
     return redirectError(clientId, "pages_fetch_failed");
   }
 
-  // Also log the user's own FB identity for debugging
-  try {
-    const meRes = await fetch(`${META_GRAPH}/me?access_token=${longToken}&fields=id,name`);
-    const me = await meRes.json();
-    console.log("[Meta OAuth] /me identity:", JSON.stringify(me));
-  } catch { /* non-fatal */ }
-
   if (pagesData.length === 0) {
-    return redirectError(clientId, "no_pages_found — make sure you manage at least one Facebook Page");
+    // Fetch identity + granted permissions to surface in the error
+    let debugInfo = "";
+    try {
+      const meRes = await fetch(`${META_GRAPH}/me?access_token=${longToken}&fields=id,name`);
+      const me = await meRes.json() as { id?: string; name?: string };
+      const permRes = await fetch(`${META_GRAPH}/me/permissions?access_token=${longToken}`);
+      const perms = await permRes.json() as { data?: Array<{ permission: string; status: string }> };
+      const granted = perms.data?.filter(p => p.status === "granted").map(p => p.permission).join(",") ?? "unknown";
+      debugInfo = ` | FB user: ${me.name} (${me.id}) | permissions: ${granted}`;
+    } catch { /* ignore */ }
+    return redirectError(clientId, `no_pages_found${debugInfo}`);
   }
 
   // Persist each page and linked Instagram account
