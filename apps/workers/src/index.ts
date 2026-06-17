@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createServer } from "http";
 import { startContentWorker } from "./workers/contentWorker";
 import { startImageWorker } from "./workers/imageWorker";
 import { startValidateWorker } from "./workers/validateWorker";
@@ -12,6 +13,16 @@ import {
 } from "./schedulers/postScheduler";
 
 console.log("🚀 AutoSocial AI Workers starting...");
+
+// Railway requires an HTTP healthcheck response — this process has no web
+// server otherwise, so expose a trivial one just to satisfy the platform.
+const PORT = process.env.PORT ?? 3001;
+createServer((_req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("ok");
+}).listen(PORT, () => {
+  console.log(`[Healthcheck] Listening on port ${PORT}`);
+});
 
 // Start all workers
 const workers = [
