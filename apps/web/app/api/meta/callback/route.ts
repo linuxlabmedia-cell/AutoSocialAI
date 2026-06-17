@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
       `${META_GRAPH}/me/accounts?access_token=${longToken}&fields=id,name,access_token,instagram_business_account`
     );
     const raw = await pagesRes.json() as { data?: typeof pagesData; error?: { message: string } };
+    console.log("[Meta OAuth] /me/accounts raw response:", JSON.stringify(raw));
     if (raw.error) {
       console.error("[Meta OAuth] Pages fetch error:", raw.error);
       return redirectError(clientId, raw.error.message);
@@ -86,6 +87,13 @@ export async function GET(req: NextRequest) {
     console.error("[Meta OAuth] Pages network error:", err);
     return redirectError(clientId, "pages_fetch_failed");
   }
+
+  // Also log the user's own FB identity for debugging
+  try {
+    const meRes = await fetch(`${META_GRAPH}/me?access_token=${longToken}&fields=id,name`);
+    const me = await meRes.json();
+    console.log("[Meta OAuth] /me identity:", JSON.stringify(me));
+  } catch { /* non-fatal */ }
 
   if (pagesData.length === 0) {
     return redirectError(clientId, "no_pages_found — make sure you manage at least one Facebook Page");
