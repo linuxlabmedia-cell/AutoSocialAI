@@ -1,15 +1,22 @@
 import { db } from "@autosocial/db";
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 const META_GRAPH = "https://graph.facebook.com/v19.0";
+const ALGORITHM = "aes-256-gcm";
+const KEY = Buffer.from(process.env.ENCRYPTION_KEY ?? "00000000000000000000000000000000", "utf8").subarray(0, 32);
 
-function decryptToken(encrypted: string): string {
-  // In production, import from a shared crypto util
-  // For now we import dynamically to avoid circular deps
-  return encrypted; // placeholder — wire up crypto.ts decrypt
+function decryptToken(data: string): string {
+  const [ivHex, tagHex, encHex] = data.split(":");
+  const decipher = createDecipheriv(ALGORITHM, KEY, Buffer.from(ivHex!, "hex"));
+  decipher.setAuthTag(Buffer.from(tagHex!, "hex"));
+  return Buffer.concat([decipher.update(Buffer.from(encHex!, "hex")), decipher.final()]).toString("utf8");
 }
 
-function encryptToken(plain: string): string {
-  return plain; // placeholder — wire up crypto.ts encrypt
+function encryptToken(text: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv(ALGORITHM, KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  return `${iv.toString("hex")}:${cipher.getAuthTag().toString("hex")}:${encrypted.toString("hex")}`;
 }
 
 export async function getValidToken(socialAccountId: string): Promise<string> {
