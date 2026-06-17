@@ -77,30 +77,18 @@ export async function GET(req: NextRequest) {
       `${META_GRAPH}/me/accounts?access_token=${longToken}&fields=id,name,access_token,instagram_business_account`
     );
     const raw = await pagesRes.json() as { data?: typeof pagesData; error?: { message: string } };
-    console.log("[Meta OAuth] /me/accounts raw response:", JSON.stringify(raw));
     if (raw.error) {
-      console.error("[Meta OAuth] Pages fetch error:", raw.error);
-      return redirectError(clientId, raw.error.message);
+      return redirectError(clientId, `pages_api_error: ${raw.error.message}`);
     }
     pagesData = raw.data ?? [];
+    if (pagesData.length === 0) {
+      return redirectError(clientId, `raw_response: ${JSON.stringify(raw).slice(0, 500)}`);
+    }
   } catch (err) {
     console.error("[Meta OAuth] Pages network error:", err);
     return redirectError(clientId, "pages_fetch_failed");
   }
 
-  if (pagesData.length === 0) {
-    // Fetch identity + granted permissions to surface in the error
-    let debugInfo = "";
-    try {
-      const meRes = await fetch(`${META_GRAPH}/me?access_token=${longToken}&fields=id,name`);
-      const me = await meRes.json() as { id?: string; name?: string };
-      const permRes = await fetch(`${META_GRAPH}/me/permissions?access_token=${longToken}`);
-      const perms = await permRes.json() as { data?: Array<{ permission: string; status: string }> };
-      const granted = perms.data?.filter(p => p.status === "granted").map(p => p.permission).join(",") ?? "unknown";
-      debugInfo = ` | FB user: ${me.name} (${me.id}) | permissions: ${granted}`;
-    } catch { /* ignore */ }
-    return redirectError(clientId, `no_pages_found${debugInfo}`);
-  }
 
   // Persist each page and linked Instagram account
   for (const page of pagesData) {
