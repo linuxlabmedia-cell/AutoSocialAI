@@ -70,23 +70,39 @@ export async function GET(req: NextRequest) {
     console.warn("[Meta OAuth] Long-lived token exchange failed, using short-lived:", err);
   }
 
-  // Fetch user's Facebook Pages
+  // Fetch user's Facebook Pages — try multiple approaches for Business apps
   let pagesData: Array<{ id: string; name: string; access_token: string; instagram_business_account?: { id: string } }> = [];
+  let debugResponses: string[] = [];
   try {
-    const pagesRes = await fetch(
-      `${META_GRAPH}/me/accounts?access_token=${longToken}&fields=id,name,access_token,instagram_business_account`
-    );
-    const raw = await pagesRes.json() as { data?: typeof pagesData; error?: { message: string } };
-    if (raw.error) {
-      return redirectError(clientId, `pages_api_error: ${raw.error.message}`);
-    }
-    pagesData = raw.data ?? [];
+    // Approach 1: standard /me/accounts
+    const r1 = await fetch(`${META_GRAPH}/me/accounts?access_token=${longToken}&fields=id,name,access_token,instagram_business_account`);
+    const d1 = await r1.json() as { data?: typeof pagesData; error?: { message: string } };
+    debugResponses.push(`accounts:${JSON.stringify(d1).slice(0, 200)}`);
+    if (d1.data && d1.data.length > 0) pagesData = d1.data;
+
+    // Approach 2: field expansion on /me
     if (pagesData.length === 0) {
-      return redirectError(clientId, `raw_response: ${JSON.stringify(raw).slice(0, 500)}`);
+      const r2 = await fetch(`${META_GRAPH}/me?access_token=${longToken}&fields=id,name,accounts{id,name,access_token,instagram_business_account}`);
+      const d2 = await r2.json() as { accounts?: { data?: typeof pagesData }; error?: { message: string } };
+      debugResponses.push(`me_fields:${JSON.stringify(d2).slice(0, 200)}`);
+      if (d2.accounts?.data && d2.accounts.data.length > 0) pagesData = d2.accounts.data;
+    }
+
+    // Approach 3: /me/businesses → owned_pages
+    if (pagesData.length === 0) {
+      const r3 = await fetch(`${META_GRAPH}/me/businesses?access_token=${longToken}&fields=id,name,owned_pages{id,name,access_token,instagram_business_account}`);
+      const d3 = await r3.json() as { data?: Array<{ owned_pages?: { data?: typeof pagesData } }>; error?: { message: string } };
+      debugResponses.push(`businesses:${JSON.stringify(d3).slice(0, 200)}`);
+      for (const biz of d3.data ?? []) {
+        if (biz.owned_pages?.data) pagesData = [...pagesData, ...biz.owned_pages.data];
+      }
+    }
+
+    if (pagesData.length === 0) {
+      return redirectError(clientId, `no_pages | ${debugResponses.join(" | ")}`);
     }
   } catch (err) {
-    console.error("[Meta OAuth] Pages network error:", err);
-    return redirectError(clientId, "pages_fetch_failed");
+    return redirectError(clientId, `pages_fetch_failed: ${String(err)}`);
   }
 
 
