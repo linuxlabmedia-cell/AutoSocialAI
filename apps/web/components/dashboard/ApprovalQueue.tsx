@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/trpc-provider";
 import { Check, X, ExternalLink, FileText } from "lucide-react";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 
 export function ApprovalQueue() {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const { data, refetch } = api.posts.getDashboardQueue.useQuery();
   const approve = api.posts.approve.useMutation({
     onSuccess: () => { toast.success("Post approved"); refetch(); },
@@ -46,13 +48,18 @@ export function ApprovalQueue() {
             <div key={post.id} className="p-4 space-y-3">
               <div className="flex items-start gap-3">
                 {post.imageUrl ? (
-                  <Image
-                    src={post.imageUrl}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#1a2540]"
-                  />
+                  <button
+                    onClick={() => setLightboxUrl(post.imageUrl!)}
+                    className="shrink-0 rounded-xl overflow-hidden ring-0 hover:ring-2 hover:ring-violet-500/60 transition-all"
+                  >
+                    <Image
+                      src={post.imageUrl}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 object-cover"
+                    />
+                  </button>
                 ) : (
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600/20 to-orange-600/10 border border-amber-500/20 shrink-0" />
                 )}
@@ -93,6 +100,26 @@ export function ApprovalQueue() {
           ))
         )}
       </div>
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-[90vw] max-h-[90vh] rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
