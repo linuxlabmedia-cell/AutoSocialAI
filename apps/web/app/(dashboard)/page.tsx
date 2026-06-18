@@ -3,6 +3,7 @@ import { StatsCards } from "@/components/dashboard/StatsCards";
 import { PublishingToday } from "@/components/dashboard/PublishingToday";
 import { ApprovalQueue } from "@/components/dashboard/ApprovalQueue";
 import { RecentClients } from "@/components/dashboard/RecentClients";
+import { EngagementSummary } from "@/components/dashboard/EngagementSummary";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <PublishingToday />
+          <EngagementSummary />
         </div>
         <div className="space-y-6">
           <ApprovalQueue />

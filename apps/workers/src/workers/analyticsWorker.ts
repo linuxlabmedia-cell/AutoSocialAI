@@ -1,6 +1,7 @@
 import { Worker } from "bullmq";
 import { db } from "@autosocial/db";
 import { redis } from "../queues";
+import { getValidToken } from "../services/meta/tokenManager";
 
 export type AnalyticsJobData = { clientId: string; platform: "FACEBOOK" | "INSTAGRAM" };
 
@@ -33,6 +34,8 @@ export function startAnalyticsWorker() {
 
       job.log(`Syncing analytics for ${publishedPosts.length} posts`);
 
+      const token = await getValidToken(socialAccount.id);
+
       for (const post of publishedPosts) {
         try {
           const platformPostId = platform === "FACEBOOK" ? post.facebookPostId : post.instagramMediaId;
@@ -41,7 +44,7 @@ export function startAnalyticsWorker() {
           const metrics = await fetchPostMetrics(
             platformPostId,
             platform,
-            socialAccount.accessToken,
+            token,
             socialAccount.platformAccountId
           );
 
