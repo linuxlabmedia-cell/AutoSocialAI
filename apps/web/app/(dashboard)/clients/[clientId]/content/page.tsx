@@ -12,18 +12,20 @@ export default function ClientContentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Content</h2>
-        <p className="text-muted-foreground text-sm mt-1">
+        <h2 className="text-lg font-semibold text-white">Content</h2>
+        <p className="text-slate-500 text-sm mt-1">
           Review and manage AI-generated content for this client
         </p>
       </div>
 
       {!posts || posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border bg-card">
-          <Inbox className="w-10 h-10 text-muted-foreground mb-3" />
-          <h3 className="font-medium">No content pending approval</h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Click <strong>Generate 30 Days</strong> above to start generating content.
+        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-[#151f35] bg-[#0d1526]">
+          <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
+            <Inbox className="w-6 h-6 text-violet-400" />
+          </div>
+          <h3 className="font-medium text-white">No content pending approval</h3>
+          <p className="text-slate-500 text-sm mt-1">
+            Click <strong className="text-slate-300">Generate 30 Days</strong> above to start generating content.
           </p>
         </div>
       ) : (

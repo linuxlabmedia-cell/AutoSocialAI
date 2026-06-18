@@ -14,17 +14,17 @@ export default function ClientOverviewPage() {
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-24 bg-muted rounded-xl" />
+        <div className="h-24 rounded-2xl border border-[#151f35] bg-[#0d1526]" />
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 bg-muted rounded-xl" />
+            <div key={i} className="h-24 rounded-2xl border border-[#151f35] bg-[#0d1526]" />
           ))}
         </div>
       </div>
     );
   }
 
-  if (!client) return <div className="text-muted-foreground">Client not found.</div>;
+  if (!client) return <div className="text-slate-500">Client not found.</div>;
 
   return (
     <div className="space-y-6">

@@ -19,11 +19,11 @@ export default function ClientAnalyticsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Analytics</h2>
-          <p className="text-muted-foreground text-sm mt-1">Performance across all connected platforms</p>
+          <h2 className="text-xl font-bold text-white">Analytics</h2>
+          <p className="text-slate-500 text-sm mt-1">Performance across all connected platforms</p>
         </div>
         <select
-          className="text-sm border rounded-lg px-3 py-1.5 bg-background"
+          className="text-sm border border-[#1a2540] rounded-xl px-3 py-1.5 bg-[#0d1526] text-slate-300"
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
         >

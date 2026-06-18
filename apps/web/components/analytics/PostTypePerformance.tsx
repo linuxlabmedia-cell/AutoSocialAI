@@ -1,6 +1,15 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { BarChart3 } from "lucide-react";
 
 type TypeData = { type: string; avgEngagement: number; count: number };
+
+const tooltipStyle = {
+  fontSize: 12,
+  borderRadius: 12,
+  background: "#0d1526",
+  border: "1px solid #1a2540",
+  color: "#e2e8f0",
+};
 
 export function PostTypePerformance({ data }: { data: TypeData[] }) {
   const formatted = data.map((d) => ({
@@ -9,15 +18,18 @@ export function PostTypePerformance({ data }: { data: TypeData[] }) {
   }));
 
   return (
-    <div className="rounded-xl border bg-card p-5">
-      <h3 className="font-semibold mb-4">Avg Engagement by Post Type</h3>
+    <div className="rounded-2xl border border-[#151f35] bg-[#0d1526] p-5">
+      <div className="flex items-center gap-2 mb-5">
+        <BarChart3 className="w-4 h-4 text-violet-400" />
+        <h3 className="font-semibold text-white text-sm">Avg Engagement by Post Type</h3>
+      </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={formatted} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-          <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} />
-          <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={90} tickLine={false} axisLine={false} />
-          <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-          <Bar dataKey="avgEngagement" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Avg Engagement" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#151f35" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} />
+          <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} width={90} tickLine={false} axisLine={false} />
+          <Tooltip contentStyle={tooltipStyle} />
+          <Bar dataKey="avgEngagement" fill="#8b5cf6" radius={[0, 6, 6, 0]} name="Avg Engagement" />
         </BarChart>
       </ResponsiveContainer>
     </div>

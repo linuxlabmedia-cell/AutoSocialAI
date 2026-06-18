@@ -16,15 +16,15 @@ export default function BillingPage() {
     <div className="space-y-8 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Billing & Plans</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold text-white">Billing & Plans</h1>
+          <p className="text-slate-500 mt-1 text-sm">
             Manage your subscription and usage
           </p>
         </div>
         {subscription?.stripeSubscriptionId && (
           <button
             onClick={() => managePortal.mutate()}
-            className="text-sm text-primary border border-primary rounded-lg px-4 py-2 hover:bg-primary/5 transition-colors"
+            className="text-sm text-violet-400 border border-violet-500/30 rounded-xl px-4 py-2 hover:bg-violet-500/10 transition-colors"
           >
             Manage Billing
           </button>
@@ -32,10 +32,10 @@ export default function BillingPage() {
       </div>
 
       {subscription && (
-        <div className="rounded-xl border bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-[#151f35] bg-[#0d1526] p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-lg">Current Plan</h2>
+              <h2 className="font-semibold text-lg text-white">Current Plan</h2>
               <CurrentPlanBadge plan={subscription.plan} status={subscription.subscriptionStatus} />
             </div>
           </div>

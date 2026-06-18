@@ -9,16 +9,16 @@ export default function ClientSettingsPage() {
   const { data: client, isLoading } = api.clients.get.useQuery({ clientId });
 
   if (isLoading) {
-    return <div className="h-64 bg-muted animate-pulse rounded-xl" />;
+    return <div className="h-64 rounded-2xl border border-[#151f35] bg-[#0d1526] animate-pulse" />;
   }
 
-  if (!client) return <div className="text-muted-foreground">Client not found.</div>;
+  if (!client) return <div className="text-slate-500">Client not found.</div>;
 
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Client Settings</h2>
-        <p className="text-muted-foreground text-sm mt-1">
+        <h2 className="text-lg font-semibold text-white">Client Settings</h2>
+        <p className="text-slate-500 text-sm mt-1">
           Update brand profile and automation settings
         </p>
       </div>
