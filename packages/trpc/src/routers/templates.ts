@@ -5,6 +5,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const templateSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
+  serviceCategory: z.string().optional(),
   industries: z.array(z.string()).default([]),
   layoutType: z.string().optional(),
   description: z.string().optional(),
@@ -24,13 +25,20 @@ const templateSchema = z.object({
 
 export const templatesRouter = createTRPCRouter({
   list: protectedProcedure
-    .input(z.object({ category: z.string().optional(), activeOnly: z.boolean().default(true) }))
+    .input(z.object({
+      category: z.string().optional(),
+      serviceCategory: z.string().optional(),
+      industrySlug: z.string().optional(),
+      activeOnly: z.boolean().default(true),
+    }))
     .query(async ({ ctx, input }) => {
       return ctx.db.creativeTemplate.findMany({
         where: {
           organizationId: ctx.organizationId,
           ...(input.activeOnly && { isActive: true }),
           ...(input.category && { category: input.category }),
+          ...(input.serviceCategory && { serviceCategory: input.serviceCategory }),
+          ...(input.industrySlug && { industries: { has: input.industrySlug } }),
         },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       });
@@ -117,4 +125,26 @@ export const templatesRouter = createTRPCRouter({
     });
     return templates.map((t) => t.category).sort();
   }),
+
+  serviceCategoriesUsed: protectedProcedure.query(async ({ ctx }) => {
+    const templates = await ctx.db.creativeTemplate.findMany({
+      where: { organizationId: ctx.organizationId, isActive: true, serviceCategory: { not: null } },
+      select: { serviceCategory: true },
+      distinct: ["serviceCategory"],
+    });
+    return templates.map((t) => t.serviceCategory).filter(Boolean).sort();
+  }),
+
+  duplicate: protectedProcedure
+    .input(z.object({ templateId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const template = await ctx.db.creativeTemplate.findFirst({
+        where: { id: input.templateId, organizationId: ctx.organizationId },
+      });
+      if (!template) throw new TRPCError({ code: "NOT_FOUND" });
+      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = template;
+      return ctx.db.creativeTemplate.create({
+        data: { ...rest, name: `${rest.name} (Copy)`, isActive: false },
+      });
+    }),
 });

@@ -25,6 +25,7 @@ export function TemplateEditLoader({ templateId }: { templateId: string }) {
       initialData={{
         name: data.name,
         category: data.category,
+        serviceCategory: data.serviceCategory ?? "",
         industries: data.industries,
         layoutType: data.layoutType ?? "",
         description: data.description ?? "",

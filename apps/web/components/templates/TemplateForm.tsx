@@ -11,30 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Copy,
 } from "lucide-react";
-
-const TEMPLATE_CATEGORIES = [
-  "Market Update",
-  "Neighborhood Spotlight",
-  "Property Management Tip",
-  "Rental Market Insight",
-  "Local Business Spotlight",
-  "Industry Statistic",
-  "FAQ Graphic",
-  "Educational Post",
-  "Seasonal Reminder",
-  "Maintenance Tip",
-  "Investment Insight",
-  "Customer Testimonial",
-  "Before & After",
-  "Service Highlight",
-  "Case Study",
-  "Community Update",
-  "Local Event Promotion",
-  "Hiring Announcement",
-  "Team Spotlight",
-  "Monthly Report",
-];
 
 const LAYOUT_TYPES = [
   "Square (1:1)",
@@ -46,24 +24,6 @@ const LAYOUT_TYPES = [
   "Split Layout",
   "Overlay Text",
   "Data Visualization",
-];
-
-const INDUSTRIES = [
-  "Real Estate",
-  "Property Management",
-  "Mortgage",
-  "Construction",
-  "Interior Design",
-  "Local Business",
-  "Restaurant",
-  "Retail",
-  "Healthcare",
-  "Legal",
-  "Finance",
-  "Technology",
-  "Education",
-  "Fitness & Wellness",
-  "Beauty & Salon",
 ];
 
 const MARKETING_OBJECTIVES = [
@@ -96,6 +56,7 @@ interface TemplateFormProps {
   initialData?: {
     name: string;
     category: string;
+    serviceCategory: string;
     industries: string[];
     layoutType: string;
     description: string;
@@ -202,11 +163,13 @@ function MultiSelect({
   options,
   selected,
   onChange,
+  loading,
 }: {
   label: string;
-  options: string[];
+  options: { value: string; label: string }[];
   selected: string[];
   onChange: (v: string[]) => void;
+  loading?: boolean;
 }) {
   const toggle = (opt: string) => {
     onChange(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
@@ -214,22 +177,26 @@ function MultiSelect({
   return (
     <div>
       <label className="block text-xs font-medium text-slate-400 mb-2">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => toggle(opt)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              selected.includes(opt)
-                ? "bg-violet-600/20 border-violet-500/40 text-violet-300"
-                : "bg-[#06090f] border-[#151f35] text-slate-500 hover:text-slate-300 hover:border-slate-600"
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-xs text-slate-600">Loading...</div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggle(opt.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                selected.includes(opt.value)
+                  ? "bg-violet-600/20 border-violet-500/40 text-violet-300"
+                  : "bg-[#06090f] border-[#151f35] text-slate-500 hover:text-slate-300 hover:border-slate-600"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -241,6 +208,7 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
 
   const [name, setName] = useState(initialData?.name ?? "");
   const [category, setCategory] = useState(initialData?.category ?? "");
+  const [serviceCategory, setServiceCategory] = useState(initialData?.serviceCategory ?? "");
   const [industries, setIndustries] = useState<string[]>(initialData?.industries ?? []);
   const [layoutType, setLayoutType] = useState(initialData?.layoutType ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
@@ -266,6 +234,13 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
   );
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 
+  // Load dynamic data from DB
+  const { data: serviceCategories, isLoading: loadingSC } = api.serviceCategories.list.useQuery();
+  const { data: industryList, isLoading: loadingIndustries } = api.industries.list.useQuery();
+
+  // Auto-fill design rules and prompt framework from selected service category
+  const selectedSC = serviceCategories?.find((sc) => sc.slug === serviceCategory);
+
   const createMutation = api.templates.create.useMutation({
     onSuccess: () => router.push("/templates"),
   });
@@ -290,11 +265,23 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
     }
   }
 
+  function handleServiceCategoryChange(slug: string) {
+    setServiceCategory(slug);
+    // Auto-fill fields from category if they're currently empty
+    const sc = serviceCategories?.find((c) => c.slug === slug);
+    if (sc) {
+      if (!designRules) setDesignRules(sc.designRules);
+      if (!contentStrategy) setContentStrategy(sc.contentStrategy);
+      if (!promptFramework) setPromptFramework(sc.aiPromptFramework);
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = {
       name,
-      category,
+      category: category || name,
+      serviceCategory: serviceCategory || undefined,
       industries,
       layoutType: layoutType || undefined,
       description: description || undefined,
@@ -317,25 +304,61 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
     }
   }
 
+  const industryOptions = (industryList ?? []).map((ind) => ({ value: ind.slug, label: ind.name }));
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl">
       <Section title="Basic Information">
-        <Input label="Template Name *" value={name} onChange={setName} placeholder="e.g. San Antonio Market Update" />
+        <Input
+          label="Template Name *"
+          value={name}
+          onChange={setName}
+          placeholder="e.g. Local SEO Success Story"
+        />
 
+        {/* Service Category */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Category *</label>
-          <select
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            Service Category
+          </label>
+          <p className="text-xs text-slate-600 mb-2">
+            The LinuxLab Media service this template supports
+          </p>
+          {loadingSC ? (
+            <div className="text-xs text-slate-600">Loading categories...</div>
+          ) : (
+            <select
+              value={serviceCategory}
+              onChange={(e) => handleServiceCategoryChange(e.target.value)}
+              className="w-full px-3 py-2.5 bg-[#06090f] border border-[#151f35] rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+            >
+              <option value="">No service category</option>
+              {serviceCategories?.map((sc) => (
+                <option key={sc.slug} value={sc.slug}>
+                  {sc.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {selectedSC && (
+            <p className="text-xs text-violet-400/70 mt-1.5 italic">{selectedSC.description}</p>
+          )}
+        </div>
+
+        {/* Template Type / Category */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            Template Type (Category)
+          </label>
+          <p className="text-xs text-slate-600 mb-2">
+            The specific template type within the service category (e.g., "New Website Launch", "ROAS Report")
+          </p>
+          <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-3 py-2.5 bg-[#06090f] border border-[#151f35] rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
-          >
-            <option value="">Select a category...</option>
-            {TEMPLATE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            placeholder="e.g. New Website Launch"
+            className="w-full px-3 py-2.5 bg-[#06090f] border border-[#151f35] rounded-lg text-sm text-white placeholder:text-slate-700 focus:outline-none focus:border-violet-500/50"
+          />
         </div>
 
         <div>
@@ -364,9 +387,10 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
 
         <MultiSelect
           label="Industry Compatibility"
-          options={INDUSTRIES}
+          options={industryOptions}
           selected={industries}
           onChange={setIndustries}
+          loading={loadingIndustries}
         />
 
         <div className="flex items-center gap-3">
@@ -439,6 +463,21 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
       </Section>
 
       <Section title="Content Strategy">
+        {selectedSC && !contentStrategy && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-600/10 border border-violet-500/20 text-xs text-violet-300">
+            <Copy className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <div>
+              Category default available.{" "}
+              <button
+                type="button"
+                onClick={() => setContentStrategy(selectedSC.contentStrategy)}
+                className="underline hover:text-violet-200"
+              >
+                Copy from {selectedSC.name}
+              </button>
+            </div>
+          </div>
+        )}
         <TextArea
           label="Content Strategy"
           value={contentStrategy}
@@ -486,6 +525,21 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
       </Section>
 
       <Section title="AI Prompt Framework" defaultOpen={true}>
+        {selectedSC && !promptFramework && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-600/10 border border-violet-500/20 text-xs text-violet-300">
+            <Copy className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <div>
+              Category prompt framework available.{" "}
+              <button
+                type="button"
+                onClick={() => setPromptFramework(selectedSC.aiPromptFramework)}
+                className="underline hover:text-violet-200"
+              >
+                Copy from {selectedSC.name}
+              </button>
+            </div>
+          </div>
+        )}
         <TextArea
           label="Prompt Framework *"
           value={promptFramework}
@@ -505,6 +559,21 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
       </Section>
 
       <Section title="Design Rules" defaultOpen={false}>
+        {selectedSC && !designRules && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-600/10 border border-violet-500/20 text-xs text-violet-300">
+            <Copy className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <div>
+              Category design rules available.{" "}
+              <button
+                type="button"
+                onClick={() => setDesignRules(selectedSC.designRules)}
+                className="underline hover:text-violet-200"
+              >
+                Copy from {selectedSC.name}
+              </button>
+            </div>
+          </div>
+        )}
         <TextArea
           label="Design Rules"
           value={designRules}
@@ -539,7 +608,7 @@ export function TemplateForm({ templateId, initialData }: TemplateFormProps) {
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={saving || !name || !category}
+          disabled={saving || !name}
           className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

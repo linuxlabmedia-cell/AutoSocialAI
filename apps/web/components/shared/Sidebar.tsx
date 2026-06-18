@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   LayoutTemplate,
+  ShieldCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "Admin", icon: ShieldCheck },
 ];
 
 export function Sidebar() {

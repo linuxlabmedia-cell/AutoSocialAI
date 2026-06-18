@@ -11,43 +11,63 @@ import {
   Eye,
   EyeOff,
   Tag,
+  Copy,
 } from "lucide-react";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "Market Update": "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Neighborhood Spotlight": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  "Property Management Tip": "bg-violet-500/10 text-violet-400 border-violet-500/20",
-  "Rental Market Insight": "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  "Investment Insight": "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  "FAQ Graphic": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  "Educational Post": "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  "Customer Testimonial": "bg-pink-500/10 text-pink-400 border-pink-500/20",
+const SERVICE_CATEGORY_COLORS: Record<string, string> = {
+  "website-design": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  "website-management": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  "content-management": "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  "meta-ads": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "seo": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  "social-media": "bg-pink-500/10 text-pink-400 border-pink-500/20",
+  "lead-generation": "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  "branding": "bg-rose-500/10 text-rose-400 border-rose-500/20",
 };
 
-function getCategoryColor(category: string) {
-  return CATEGORY_COLORS[category] ?? "bg-slate-500/10 text-slate-400 border-slate-500/20";
+function getServiceCategoryColor(slug: string) {
+  return SERVICE_CATEGORY_COLORS[slug] ?? "bg-slate-500/10 text-slate-400 border-slate-500/20";
 }
 
 export function TemplateList() {
   const [search, setSearch] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState("");
+  const [groupBy, setGroupBy] = useState<"service" | "category">("service");
 
-  const { data: templates, isLoading, refetch } = api.templates.list.useQuery({ activeOnly });
+  const { data: templates, isLoading, refetch } = api.templates.list.useQuery({
+    activeOnly,
+    serviceCategory: selectedServiceCategory || undefined,
+  });
+  const { data: serviceCategories } = api.serviceCategories.list.useQuery();
+
   const deleteMutation = api.templates.delete.useMutation({ onSuccess: () => refetch() });
   const updateMutation = api.templates.update.useMutation({ onSuccess: () => refetch() });
+  const duplicateMutation = api.templates.duplicate.useMutation({ onSuccess: () => refetch() });
 
   const filtered = templates?.filter(
     (t) =>
       t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.category.toLowerCase().includes(search.toLowerCase())
+      t.category.toLowerCase().includes(search.toLowerCase()) ||
+      (t.serviceCategory ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // Group by category
+  // Group by service category or template category
   const grouped = filtered?.reduce<Record<string, typeof filtered>>((acc, t) => {
-    if (!acc[t.category]) acc[t.category] = [];
-    acc[t.category]!.push(t);
+    const key = groupBy === "service"
+      ? (t.serviceCategory ?? "Uncategorized")
+      : t.category;
+    if (!acc[key]) acc[key] = [];
+    acc[key]!.push(t);
     return acc;
   }, {});
+
+  function getGroupLabel(key: string) {
+    if (groupBy === "service" && key !== "Uncategorized") {
+      return serviceCategories?.find((sc) => sc.slug === key)?.name ?? key;
+    }
+    return key;
+  }
 
   if (isLoading) {
     return (
@@ -62,8 +82,8 @@ export function TemplateList() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-48 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
             value={search}
@@ -72,6 +92,43 @@ export function TemplateList() {
             className="w-full pl-9 pr-4 py-2 bg-[#0d1424] border border-[#151f35] rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
           />
         </div>
+
+        {/* Service category filter */}
+        <select
+          value={selectedServiceCategory}
+          onChange={(e) => setSelectedServiceCategory(e.target.value)}
+          className="px-3 py-2 bg-[#0d1424] border border-[#151f35] rounded-lg text-sm text-slate-300 focus:outline-none focus:border-violet-500/50"
+        >
+          <option value="">All Services</option>
+          {serviceCategories?.map((sc) => (
+            <option key={sc.slug} value={sc.slug}>{sc.name}</option>
+          ))}
+        </select>
+
+        {/* Group by toggle */}
+        <div className="flex items-center border border-[#151f35] rounded-lg overflow-hidden text-xs">
+          <button
+            onClick={() => setGroupBy("service")}
+            className={`px-3 py-2 font-medium transition-colors ${
+              groupBy === "service"
+                ? "bg-violet-600/20 text-violet-300"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            By Service
+          </button>
+          <button
+            onClick={() => setGroupBy("category")}
+            className={`px-3 py-2 font-medium transition-colors border-l border-[#151f35] ${
+              groupBy === "category"
+                ? "bg-violet-600/20 text-violet-300"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            By Type
+          </button>
+        </div>
+
         <button
           onClick={() => setActiveOnly(!activeOnly)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
@@ -81,8 +138,9 @@ export function TemplateList() {
           }`}
         >
           {activeOnly ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          {activeOnly ? "Active only" : "All templates"}
+          {activeOnly ? "Active only" : "All"}
         </button>
+
         <span className="text-sm text-slate-500">{filtered?.length ?? 0} templates</span>
       </div>
 
@@ -90,9 +148,11 @@ export function TemplateList() {
       {!filtered?.length && (
         <div className="text-center py-20 border border-dashed border-[#151f35] rounded-xl">
           <LayoutTemplate className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-          <p className="text-slate-400 font-medium">No templates yet</p>
+          <p className="text-slate-400 font-medium">No templates found</p>
           <p className="text-slate-600 text-sm mt-1">
-            Create your first template to start building a creative library
+            {search || selectedServiceCategory
+              ? "Try adjusting your filters"
+              : "Create your first template to start building a creative library"}
           </p>
           <Link
             href="/templates/new"
@@ -104,12 +164,12 @@ export function TemplateList() {
       )}
 
       {/* Grouped grid */}
-      {Object.entries(grouped ?? {}).map(([category, items]) => (
-        <div key={category}>
+      {Object.entries(grouped ?? {}).map(([key, items]) => (
+        <div key={key}>
           <div className="flex items-center gap-2 mb-3">
             <Tag className="w-3.5 h-3.5 text-slate-500" />
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-              {category}
+              {getGroupLabel(key)}
             </h2>
             <span className="text-xs text-slate-600">({items.length})</span>
           </div>
@@ -140,11 +200,18 @@ export function TemplateList() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-white text-sm truncate">{template.name}</h3>
-                      <span
-                        className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(template.category)}`}
-                      >
-                        {template.category}
-                      </span>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {template.serviceCategory && (
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getServiceCategoryColor(template.serviceCategory)}`}
+                          >
+                            {serviceCategories?.find((sc) => sc.slug === template.serviceCategory)?.name ?? template.serviceCategory}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-500/10 text-slate-400 border-slate-500/20">
+                          {template.category}
+                        </span>
+                      </div>
                     </div>
                     {!template.isActive && (
                       <span className="text-xs text-slate-600 border border-slate-700 rounded px-1.5 py-0.5 shrink-0">
@@ -191,6 +258,13 @@ export function TemplateList() {
                       <Pencil className="w-3.5 h-3.5" />
                       Edit
                     </Link>
+                    <button
+                      onClick={() => duplicateMutation.mutate({ templateId: template.id })}
+                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Duplicate
+                    </button>
                     <button
                       onClick={() =>
                         updateMutation.mutate({

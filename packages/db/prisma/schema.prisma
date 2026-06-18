@@ -141,6 +141,44 @@ model Client {
 }
 
 // ============================================================
+// TEMPLATE SYSTEM — GLOBAL REFERENCE DATA
+// ============================================================
+
+model Industry {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  slug                 String   @unique
+  description          String
+  keywords             String[]
+  tone                 String
+  visualStyle          String   @map("visual_style")
+  suggestedCtaTypes    String[] @map("suggested_cta_types")
+  compatibleCategories String[] @map("compatible_categories")
+  isActive             Boolean  @default(true) @map("is_active")
+  sortOrder            Int      @default(0) @map("sort_order")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("industries")
+}
+
+model ServiceCategory {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  slug              String   @unique
+  description       String
+  contentStrategy   String   @map("content_strategy")
+  designRules       String   @map("design_rules")
+  aiPromptFramework String   @map("ai_prompt_framework")
+  isActive          Boolean  @default(true) @map("is_active")
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("service_categories")
+}
+
+// ============================================================
 // CREATIVE TEMPLATE LIBRARY
 // ============================================================
 
@@ -150,6 +188,7 @@ model CreativeTemplate {
 
   name            String
   category        String
+  serviceCategory String?  @map("service_category")
   industries      String[]
   layoutType      String?  @map("layout_type")
   description     String?
