@@ -39,12 +39,20 @@ export function ClientHeader({ client }: { client: Client & { socialAccounts: an
     <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0"
-            style={{ background: brandColor ?? "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
-          >
-            {initials}
-          </div>
+          {client.logoUrl ? (
+            <img
+              src={client.logoUrl}
+              alt={client.businessName}
+              className="w-14 h-14 rounded-2xl object-contain bg-white/5 border border-[#1a2540] shrink-0"
+            />
+          ) : (
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shrink-0"
+              style={{ background: brandColor ?? "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+            >
+              {initials}
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-bold text-white">{client.businessName}</h1>
             <p className="text-slate-500 text-sm">

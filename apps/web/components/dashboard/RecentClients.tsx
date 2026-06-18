@@ -29,9 +29,17 @@ export function RecentClients() {
             href={`/clients/${client.id}`}
             className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors group"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600/25 to-indigo-600/15 border border-violet-500/20 flex items-center justify-center text-violet-300 font-bold text-sm shrink-0">
-              {client.businessName[0]?.toUpperCase()}
-            </div>
+            {client.logoUrl ? (
+              <img
+                src={client.logoUrl}
+                alt={client.businessName}
+                className="w-9 h-9 rounded-xl object-contain bg-white/5 border border-violet-500/20 shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600/25 to-indigo-600/15 border border-violet-500/20 flex items-center justify-center text-violet-300 font-bold text-sm shrink-0">
+                {client.businessName[0]?.toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-200 truncate">
                 {client.businessName}

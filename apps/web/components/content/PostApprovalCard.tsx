@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, Edit2, Hash, ImageIcon } from "lucide-react";
+import { Check, X, Edit2, Hash, ImageIcon, Maximize2 } from "lucide-react";
 import { api } from "@/lib/trpc-provider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ type Post = {
   marketingObjective?: string | null;
   qaScore?: unknown;
   qaResults?: unknown;
+  scheduledAt?: string | Date | null;
   client: { businessName: string; logoUrl?: string | null; brandColors?: string[] };
 };
 
@@ -30,6 +31,7 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [localImageUrl, setLocalImageUrl] = useState<string | null>(post.imageUrl ?? null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const genImage = api.posts.generateImage.useMutation({
     onSuccess: (updated) => {
@@ -61,7 +63,7 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
   return (
     <div className="rounded-2xl border border-[#151f35] bg-[#0d1526] overflow-hidden flex flex-col">
       {/* Image area */}
-      <div className="aspect-square relative bg-[#06090f]">
+      <div className="aspect-square relative bg-[#06090f] group">
         {localImageUrl && !imageError ? (
           <>
             {!imageLoaded && (
@@ -73,12 +75,21 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
               src={localImageUrl}
               alt={post.caption}
               className={cn(
-                "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-500 cursor-zoom-in",
                 imageLoaded ? "opacity-100" : "opacity-0"
               )}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
+              onClick={() => setLightboxOpen(true)}
             />
+            {imageLoaded && (
+              <button
+                onClick={() => setLightboxOpen(true)}
+                className="absolute bottom-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-black/50 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-4">
@@ -132,12 +143,20 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
       <div className="p-4 flex flex-col gap-3 flex-1">
         {/* Client */}
         <div className="flex items-center gap-2">
-          <div
-            className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-            style={{ background: brandColor ?? "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
-          >
-            {post.client.businessName[0]?.toUpperCase()}
-          </div>
+          {post.client.logoUrl ? (
+            <img
+              src={post.client.logoUrl}
+              alt={post.client.businessName}
+              className="w-5 h-5 rounded-md object-contain bg-white/5 shrink-0"
+            />
+          ) : (
+            <div
+              className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+              style={{ background: brandColor ?? "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+            >
+              {post.client.businessName[0]?.toUpperCase()}
+            </div>
+          )}
           <p className="text-xs text-slate-500 font-medium">{post.client.businessName}</p>
           {(post.creativeCategory || post.topic) && (
             <span className="ml-auto text-xs text-slate-700 truncate max-w-[120px]">
@@ -145,6 +164,21 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
             </span>
           )}
         </div>
+
+        {post.scheduledAt && (
+          <p className="text-xs text-violet-400/80 -mt-1">
+            Scheduled for{" "}
+            {new Date(post.scheduledAt).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}{" "}
+            at{" "}
+            {new Date(post.scheduledAt).toLocaleTimeString(undefined, {
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </p>
+        )}
 
         {/* Headline */}
         {post.headline && !isEditing && (
@@ -221,6 +255,25 @@ export function PostApprovalCard({ post, onAction }: { post: Post; onAction: () 
           )}
         </div>
       </div>
+      {lightboxOpen && localImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <img
+            src={localImageUrl}
+            alt={post.caption}
+            className="max-w-[90vw] max-h-[90vh] rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
